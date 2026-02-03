@@ -7,6 +7,7 @@ import com.okayji.identity.dto.response.ProfileResponse;
 import com.okayji.identity.entity.Profile;
 import com.okayji.identity.entity.User;
 import com.okayji.identity.repository.ProfileRepository;
+import com.okayji.identity.repository.UserRepository;
 import com.okayji.identity.service.ProfileService;
 import com.okayji.mapper.ProfileMapper;
 import lombok.AllArgsConstructor;
@@ -19,12 +20,15 @@ import org.springframework.stereotype.Service;
 public class ProfileServiceImpl implements ProfileService {
 
     private final ProfileRepository profileRepository;
+    private final UserRepository userRepository;
     private final ProfileMapper profileMapper;
 
     @Override
-    public ProfileResponse getUserProfile(String userId) {
-        Profile profile = profileRepository.findById(userId)
-                .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
+    public ProfileResponse getUserProfile(String userIdOrUsername) {
+        Profile profile = userRepository
+                .findUserByIdOrUsername(userIdOrUsername, userIdOrUsername)
+                .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND))
+                .getProfile();
 
         return profileMapper.toProfileResponse(profile);
     }

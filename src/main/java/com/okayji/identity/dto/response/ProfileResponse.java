@@ -13,6 +13,7 @@ import java.time.LocalDate;
 @Getter
 public class ProfileResponse {
     String userId;
+    String username;
     String fullName;
     Gender gender;
     String bio;

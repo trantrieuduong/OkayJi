@@ -74,8 +74,8 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Page<PostResponse> getPostsByUserId(String userId, int page, int size) {
-        userRepository.findById(userId)
+    public Page<PostResponse> getPostsByUser(String userIdOrUsername, int page, int size) {
+        userRepository.findUserByIdOrUsername(userIdOrUsername, userIdOrUsername)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
 
         User user = getCurrentUser();
@@ -83,7 +83,7 @@ public class PostServiceImpl implements PostService {
         Pageable pageable = PageRequest
                 .of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        return postRepository.findByUser_Id(userId, pageable)
+        return postRepository.findByUser_Id(userIdOrUsername, pageable)
                 .map(post -> postMapper
                         .toPostResponse(post,
                                 reactionRepository.existsByPostIdAndUserId(post.getId(), user.getId()),

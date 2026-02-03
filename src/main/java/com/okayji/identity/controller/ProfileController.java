@@ -18,24 +18,24 @@ public class ProfileController {
     private ProfileService profileService;
     private PostService postService;
 
-    @GetMapping("/{userId}")
-    ApiResponse<ProfileResponse> getUserProfile(@PathVariable String userId) {
+    @GetMapping("/{userIdOrUsername}")
+    ApiResponse<ProfileResponse> getUserProfile(@PathVariable String userIdOrUsername) {
         return ApiResponse.<ProfileResponse>builder()
                 .success(true)
                 .message("Get users profile success")
-                .data(profileService.getUserProfile(userId))
+                .data(profileService.getUserProfile(userIdOrUsername))
                 .build();
     }
 
-    @GetMapping("/{userId}/posts")
+    @GetMapping("/{userIdOrUsername}/posts")
     ApiResponse<Page<PostResponse>> getPostsByUser(
-            @PathVariable String userId,
+            @PathVariable String userIdOrUsername,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         return ApiResponse.<Page<PostResponse>>builder()
                 .success(true)
-                .data(postService.getPostsByUserId(userId, page, size))
+                .data(postService.getPostsByUser(userIdOrUsername, page, size))
                 .build();
     }
 

@@ -12,6 +12,7 @@ public interface PostMapper {
     @Mapping(source = "post.user.id", target = "userId")
     @Mapping(source = "post.user.profile.fullName", target = "userFullName")
     @Mapping(source = "post.user.profile.avatarUrl", target = "userAvatarUrl")
+    @Mapping(source = "post.user.username", target = "username")
     PostResponse toPostResponse(Post post, boolean liked, long likesCount,  long commentsCount);
 
     @Mapping(target = "id", ignore = true)

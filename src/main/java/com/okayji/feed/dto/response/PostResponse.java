@@ -14,6 +14,7 @@ import java.time.Instant;
 public class PostResponse {
     String id;
     String userId;
+    String username;
     String userFullName;
     String userAvatarUrl;
     String content;

@@ -8,5 +8,5 @@ public interface PostService {
     PostResponse getPostById(String id);
     PostResponse createPost(PostCreationRequest postCreationRequest);
     void deletePostById(String id);
-    Page<PostResponse> getPostsByUserId(String userId, int page, int size);
+    Page<PostResponse> getPostsByUser(String userIdOrUsername, int page, int size);
 }
