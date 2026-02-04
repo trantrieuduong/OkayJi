@@ -10,6 +10,8 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface ProfileMapper {
     @Mapping(source = "profile.user.username", target = "username")
+    @Mapping(target = "friend", ignore = true)
+    @Mapping(target = "friendRequest",  ignore = true)
     ProfileResponse toProfileResponse(Profile profile);
     void updateProfile(@MappingTarget Profile profile, ProfileUpdateRequest profileUpdateRequest);
 }

@@ -108,6 +108,8 @@ public class GlobalExceptionHandler {
             switch(constraint) {
                 case "user.uk_user_username" -> appError = AppError.USERNAME_EXISTED;
                 case "user.uk_user_email" -> appError = AppError.EMAIL_EXISTED;
+                case "friend_request.uk_fr_pair" -> appError = AppError.FRIEND_REQUEST_EXISTS;
+                case "friend.uk_friends_pair" -> appError = AppError.FRIEND_ALREADY;
             }
         }
         return ResponseEntity.status(appError.getHttpStatusCode())

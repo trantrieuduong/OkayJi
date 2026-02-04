@@ -1,6 +1,7 @@
 package com.okayji.feed.entity;
 
-import com.okayji.enums.FriendRequestStatus;
+import com.okayji.exception.AppError;
+import com.okayji.exception.AppException;
 import com.okayji.identity.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,18 +13,17 @@ import java.time.Instant;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(
         uniqueConstraints = {
-                @UniqueConstraint(name="uk_fr_pair", columnNames={"user_low_id","user_high_id"})
+                @UniqueConstraint(name="uk_fr_pair", columnNames={"sender_id","receiver_id"})
         },
         indexes = {
-                @Index(name="ix_fr_low", columnList="user_low_id"),
-                @Index(name="ix_fr_high", columnList="user_high_id"),
-                @Index(name="ix_fr_requested_by", columnList="requested_by_user_id"),
-                @Index(name="ix_fr_status", columnList="status")
+                @Index(name="ix_fr_send", columnList="sender_id"),
+                @Index(name="ix_fr_receive", columnList="receiver_id")
         }
 )
 public class FriendRequest {
@@ -32,36 +32,14 @@ public class FriendRequest {
     String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_low_id", nullable = false)
-    User userLow;
+    @JoinColumn(name = "sender_id", nullable = false)
+    User sender;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_high_id", nullable = false)
-    User userHigh;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name="requested_by_user_id", nullable=false)
-    User requestedBy;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable=false)
-    FriendRequestStatus status = FriendRequestStatus.PENDING;
+    @JoinColumn(name = "receiver_id", nullable = false)
+    User receiver;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     Instant createdAt;
-
-    @PrePersist
-    @PreUpdate
-    void normalizePair() {
-        String userLowId = userLow.getId();
-        String userHighId = userHigh.getId();
-        if (userLowId.equals(userHighId))
-            throw new IllegalArgumentException("Cannot friend yourself");
-        if (userLowId.compareTo(userHighId) > 0) {
-            User tmp = userLow;
-            userLow = userHigh;
-            userHigh = tmp;
-        }
-    }
 }

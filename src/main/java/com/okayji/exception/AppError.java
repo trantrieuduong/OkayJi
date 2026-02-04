@@ -25,6 +25,12 @@ public enum AppError {
     PASSWORD_INVALID("Password must be at least {min} characters long", HttpStatus.BAD_REQUEST),
     WRONG_PASSWORD("Wrong password", HttpStatus.BAD_REQUEST),
     PASSWORD_NOT_MATCH("Password does not match", HttpStatus.BAD_REQUEST),
+
+    FRIEND_YOURSELF("Cannot friend yourself", HttpStatus.BAD_REQUEST),
+    FRIEND_ALREADY("You are friend already", HttpStatus.BAD_REQUEST),
+    NOT_FRIEND("You are not friends", HttpStatus.BAD_REQUEST),
+    FRIEND_REQUEST_NOT_FOUND("Friend request not found", HttpStatus.NOT_FOUND),
+    FRIEND_REQUEST_EXISTS("Friend request already exists", HttpStatus.BAD_REQUEST),
     ;
 
     private final String message;
