@@ -1,14 +1,16 @@
 package com.okayji.feed.controller;
 
 import com.okayji.common.ApiResponse;
+import com.okayji.feed.dto.response.FriendReqResponse;
 import com.okayji.feed.service.FriendService;
+import com.okayji.identity.dto.response.ProfileBasicResponse;
+import com.okayji.identity.dto.response.ProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/friends")
@@ -17,6 +19,33 @@ import org.springframework.web.bind.annotation.RestController;
 public class FriendController {
 
     private final FriendService friendService;
+
+    @GetMapping
+    @Operation(summary = "Get friend list")
+    public ApiResponse<List<ProfileBasicResponse>> getFriends() {
+        return ApiResponse.<List<ProfileBasicResponse>>builder()
+                .success(true)
+                .data(friendService.getFriends())
+                .build();
+    }
+
+    @GetMapping("/received")
+    @Operation(summary = "Get friend requests received")
+    public ApiResponse<List<FriendReqResponse>> getFriendRequestsReceived() {
+        return ApiResponse.<List<FriendReqResponse>>builder()
+                .success(true)
+                .data(friendService.getFriendRequestReceived())
+                .build();
+    }
+
+    @GetMapping("/sent")
+    @Operation(summary = "Get friend requests sent")
+    public ApiResponse<List<FriendReqResponse>> getFriendRequestsSent() {
+        return ApiResponse.<List<FriendReqResponse>>builder()
+                .success(true)
+                .data(friendService.getFriendRequestSent())
+                .build();
+    }
 
     @PostMapping("/request/{toUserIdOrUsername}")
     @Operation(summary = "Send friend request to another")

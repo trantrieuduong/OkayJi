@@ -1,5 +1,6 @@
 package com.okayji.feed.dto.response;
 
+import com.okayji.identity.dto.response.ProfileBasicResponse;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +13,7 @@ import java.time.Instant;
 @Getter
 public class FriendReqResponse {
     String id;
-    String senderId;
-    String receiverId;
+    ProfileBasicResponse sender;
+    ProfileBasicResponse receiver;
     Instant createdAt;
 }

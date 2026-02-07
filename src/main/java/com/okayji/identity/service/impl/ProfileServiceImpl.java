@@ -53,7 +53,10 @@ public class ProfileServiceImpl implements ProfileService {
                 friendRequest = friendRequestRepository.findBySenderAndReceiver(currentUser, user);
 
             profileResponse.setFriendRequest(Objects.nonNull(friendRequest)
-                    ? friendRequestMapper.toFrFriendReqResponse(friendRequest)
+                    ? friendRequestMapper
+                    .toFriendReqResponse(friendRequest,
+                            profileMapper.toProfileBasicResponse(friendRequest.getSender().getProfile()),
+                            profileMapper.toProfileBasicResponse(friendRequest.getReceiver().getProfile()))
                     : null);
         }
 

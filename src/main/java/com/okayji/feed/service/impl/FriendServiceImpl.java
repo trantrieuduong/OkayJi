@@ -2,14 +2,18 @@ package com.okayji.feed.service.impl;
 
 import com.okayji.exception.AppError;
 import com.okayji.exception.AppException;
+import com.okayji.feed.dto.response.FriendReqResponse;
 import com.okayji.feed.entity.Friend;
 import com.okayji.feed.entity.FriendRequest;
 import com.okayji.feed.repository.FriendRepository;
 import com.okayji.feed.repository.FriendRequestRepository;
 import com.okayji.feed.service.FriendService;
+import com.okayji.identity.dto.response.ProfileBasicResponse;
 import com.okayji.identity.dto.response.ProfileResponse;
 import com.okayji.identity.entity.User;
 import com.okayji.identity.repository.UserRepository;
+import com.okayji.mapper.FriendRequestMapper;
+import com.okayji.mapper.ProfileMapper;
 import com.okayji.utils.PairUser;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +31,8 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRepository friendRepository;
     private final FriendRequestRepository friendRequestRepository;
     private final UserRepository userRepository;
+    private final ProfileMapper profileMapper;
+    private final FriendRequestMapper friendRequestMapper;
 
     @Override
     @Transactional
@@ -125,8 +131,41 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
-    public List<ProfileResponse> getFriends() {
-        return List.of();
+    public List<ProfileBasicResponse> getFriends() {
+        String userId = getCurrentUser().getId();
+        return friendRepository
+                .findByUserLow_IdOrUserHigh_Id(userId, userId).stream()
+                .map(friend -> profileMapper.toProfileBasicResponse(
+                        friend.getUserLow().getId().equals(userId)
+                        ? friend.getUserHigh().getProfile()
+                        : friend.getUserLow().getProfile()))
+                .toList();
+    }
+
+    @Override
+    public List<FriendReqResponse> getFriendRequestSent() {
+        String userId = getCurrentUser().getId();
+        return friendRequestRepository.findBySender_Id(userId).stream()
+                .map(friendRequest -> friendRequestMapper
+                        .toFriendReqResponse(friendRequest,
+                                profileMapper.toProfileBasicResponse(
+                                        friendRequest.getSender().getProfile()),
+                                profileMapper.toProfileBasicResponse(
+                                        friendRequest.getReceiver().getProfile())))
+                .toList();
+    }
+
+    @Override
+    public List<FriendReqResponse> getFriendRequestReceived() {
+        String userId = getCurrentUser().getId();
+        return friendRequestRepository.findByReceiver_Id(userId).stream()
+                .map(friendRequest -> friendRequestMapper
+                        .toFriendReqResponse(friendRequest,
+                                profileMapper.toProfileBasicResponse(
+                                        friendRequest.getSender().getProfile()),
+                                profileMapper.toProfileBasicResponse(
+                                        friendRequest.getReceiver().getProfile())))
+                .toList();
     }
 
     private User getCurrentUser() {

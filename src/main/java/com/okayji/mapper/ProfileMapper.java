@@ -1,6 +1,7 @@
 package com.okayji.mapper;
 
 import com.okayji.identity.dto.request.ProfileUpdateRequest;
+import com.okayji.identity.dto.response.ProfileBasicResponse;
 import com.okayji.identity.dto.response.ProfileResponse;
 import com.okayji.identity.entity.Profile;
 import org.mapstruct.Mapper;
@@ -13,5 +14,9 @@ public interface ProfileMapper {
     @Mapping(target = "friend", ignore = true)
     @Mapping(target = "friendRequest",  ignore = true)
     ProfileResponse toProfileResponse(Profile profile);
+
+    @Mapping(source = "profile.user.username", target = "username")
+    ProfileBasicResponse toProfileBasicResponse(Profile profile);
+
     void updateProfile(@MappingTarget Profile profile, ProfileUpdateRequest profileUpdateRequest);
 }
