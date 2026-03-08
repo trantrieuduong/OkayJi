@@ -15,7 +15,7 @@ import com.okayji.exception.AppException;
 import com.okayji.identity.entity.User;
 import com.okayji.identity.repository.UserRepository;
 import com.okayji.mapper.MessageMapper;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,7 @@ public class MessageServiceImpl implements MessageService {
     private final UserRepository userRepository;
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
+    @Transactional
     public void sendMessage(String chatId, String userId, MessageRequest messageRequest) {
         User sender = userRepository.findUserById(userId);
         Chat chat = chatRepository.findById(chatId)

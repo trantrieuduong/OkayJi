@@ -7,7 +7,6 @@ import com.okayji.feed.repository.FriendRepository;
 import com.okayji.feed.repository.PostRepository;
 import com.okayji.feed.service.FeedService;
 import com.okayji.feed.service.PostService;
-import com.okayji.mapper.PostMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

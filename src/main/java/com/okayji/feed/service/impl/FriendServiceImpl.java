@@ -17,7 +17,7 @@ import com.okayji.mapper.ProfileMapper;
 import com.okayji.notification.service.NotificationService;
 import com.okayji.notification.service.NotificationFactory;
 import com.okayji.utils.PairUser;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -37,7 +37,7 @@ public class FriendServiceImpl implements FriendService {
     private final NotificationService notificationService;
 
     @Override
-    @Transactional(rollbackOn = AppException.class)
+    @Transactional
     public void createFriendRequest(String fromUserId, String toUserIdOrUsername) {
         User sender = userRepository.findById(fromUserId)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
@@ -73,7 +73,7 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
-    @Transactional(rollbackOn = AppException.class)
+    @Transactional
     public void acceptFriendRequest(String friendRequestId) {
         FriendRequest friendRequest = friendRequestRepository.findById(friendRequestId)
                 .orElseThrow(() -> new AppException(AppError.FRIEND_REQUEST_NOT_FOUND));

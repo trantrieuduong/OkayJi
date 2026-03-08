@@ -21,7 +21,7 @@ import com.okayji.identity.repository.UserRepository;
 import com.okayji.mapper.ChatMapper;
 import com.okayji.mapper.MessageMapper;
 import com.okayji.utils.PairUser;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,7 +46,7 @@ public class ChatServiceImpl implements ChatService {
     private final MessageMapper messageMapper;
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
+    @Transactional
     public void createDirectChat(String thisUserId, String withUserId) {
         User currentUser = userRepository.findById(thisUserId)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
@@ -88,7 +88,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
+    @Transactional
     public void leaveGroupChat(String userId, String groupId) {
         ChatMember member = chatMemberRepository.findByChat_IdAndMember_Id(groupId, userId)
                 .orElseThrow(() -> new AppException(AppError.CHAT_NOT_FOUND));
@@ -105,7 +105,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
+    @Transactional
     public ChatResponse createGroupChat(String userId, CreateGroupChatRequest createGroupChatRequest) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));

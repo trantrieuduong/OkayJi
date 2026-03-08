@@ -14,7 +14,7 @@ import com.okayji.mapper.UserMapper;
 import com.okayji.identity.repository.RoleRepository;
 import com.okayji.identity.repository.UserRepository;
 import com.okayji.identity.service.UserService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,7 +40,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
+    @Transactional
     public UserResponse create(UserCreationRequest userCreationRequest) {
         log.info("User creation request: username={}", userCreationRequest.getUsername());
 
@@ -80,7 +80,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
+    @Transactional
     public void changeUsername(String userId, UserChangeUsernameRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
