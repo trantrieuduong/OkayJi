@@ -15,6 +15,7 @@ public enum AppError {
     UNAUTHORIZED("You do not have access", HttpStatus.UNAUTHORIZED),
 
     USERNAME_EXISTED("Username already exists", HttpStatus.BAD_REQUEST),
+    CHANGE_USERNAME_LIMIT("You can only change your username every 30 days", HttpStatus.BAD_REQUEST),
     EMAIL_EXISTED("Email already exists", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
     POST_NOT_FOUND("Post not found", HttpStatus.NOT_FOUND),

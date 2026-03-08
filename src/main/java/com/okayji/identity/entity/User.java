@@ -7,10 +7,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Set;
@@ -37,7 +39,14 @@ public class User implements UserDetails {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     Instant createdAt;
+
+    @UpdateTimestamp
+    Instant updatedAt;
+
+    Instant lastChangeUsername;
+
     String oauthProvider;
+
     String oauthId;
 
     @Enumerated(EnumType.STRING)
@@ -54,5 +63,13 @@ public class User implements UserDetails {
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
                 .toList();
+    }
+
+    public boolean canChangeUsername() {
+        if (lastChangeUsername == null) {
+            return true;
+        }
+
+        return Duration.between(lastChangeUsername, Instant.now()).toDays() > 30;
     }
 }

@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.HashSet;
 
 @Service
@@ -83,6 +84,10 @@ public class UserServiceImpl implements UserService {
     public void changeUsername(String userId, UserChangeUsernameRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
+
+        if (!user.canChangeUsername())
+            throw new AppException(AppError.CHANGE_USERNAME_LIMIT);
+
         log.info("User change username request: oldUsername={}; newUsername={}",
                 user.getUsername(), request.getNewUsername());
 
@@ -90,6 +95,7 @@ public class UserServiceImpl implements UserService {
             throw new AppException(AppError.WRONG_PASSWORD);
 
         user.setUsername(request.getNewUsername());
+        user.setLastChangeUsername(Instant.now());
         userRepository.save(user);
     }
 
