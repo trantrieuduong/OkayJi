@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 public class FriendRequestPayload extends NotificationPayload {
-    private String requestId;
-    private String requesterId;
+    private final String requestId;
+    private final String requesterId;
 
     public FriendRequestPayload(String reviewTitle, String requestId, String requesterId) {
         super(reviewTitle);

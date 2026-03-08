@@ -18,7 +18,6 @@ import com.okayji.identity.repository.UserRepository;
 import com.okayji.mapper.PostMapper;
 import com.okayji.moderation.event.PostModerationEvent;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -26,6 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -48,11 +48,12 @@ public class PostServiceImpl implements PostService {
         return postMapper.toPostResponse(post,
                 reactionRepository.existsByPostIdAndUserId(post.getId(), viewerId),
                 reactionRepository.countByPost_Id(post.getId()),
-                commentRepository.countByPost_Id(post.getId()));
+                commentRepository.countByPost_Id(post.getId())
+        );
     }
 
     @Override
-    @Transactional(rollbackOn = AppException.class)
+    @Transactional
     public PostResponse createPost(String userId, PostCreationRequest postCreationRequest) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));

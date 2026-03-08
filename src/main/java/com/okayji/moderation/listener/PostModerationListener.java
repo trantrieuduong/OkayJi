@@ -16,11 +16,16 @@ import com.okayji.moderation.entity.TargetType;
 import com.okayji.moderation.event.PostModerationEvent;
 import com.okayji.moderation.repository.ModerationResultRepository;
 import com.okayji.moderation.service.ModerationService;
+import com.okayji.notification.service.NotificationFactory;
+import com.okayji.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
 
@@ -33,19 +38,21 @@ public class PostModerationListener {
     private final ModerationResultRepository moderationResultRepository;
     private final ModerationService moderationService;
     private final ModerationMapper moderationMapper;
+    private final NotificationService notificationService;
 
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(PostModerationEvent event) {
         log.info("Received Post Moderation Event with post id={}", event.getSource());
         String postId = (String) event.getSource();
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new AppException(AppError.POST_NOT_FOUND));
+        boolean reject = false;
 
         // TEXT
         if (post.getContent() != null && !post.getContent().isBlank()) {
-            log.info("Moderating text post id={}", event.getSource());
             ModerationVerdict verdict = moderationService.moderateText(post.getContent());
             ModerationResult result = moderationMapper.toModerationResult(
                     verdict, TargetType.POST, post.getId(), InputType.TEXT
@@ -53,22 +60,23 @@ public class PostModerationListener {
             moderationResultRepository.save(result);
 
             if (verdict.decision().equals(ModerationDecision.BLOCK)) {
-                setStatusAndSaveToDb(post, PostStatus.REJECTED);
-                return;
+                reject = true;
             }
         }
 
-        boolean reject = false;
         // MEDIA
         for (PostMedia m : post.getPostMedia()) {
-            log.info("Moderating media post id={}", event.getSource());
+            if (reject) break;
+
             if (m.getType() == PostMediaType.IMAGE) {
                 ModerationVerdict verdict = moderationService.moderateImageUrl(m.getMediaUrl());
                 ModerationResult result = moderationMapper.toModerationResult(
                         verdict, TargetType.POST, post.getId(), InputType.IMAGE
                 );
                 moderationResultRepository.save(result);
-                if (verdict.decision().equals(ModerationDecision.BLOCK)) reject = true;
+
+                if (verdict.decision().equals(ModerationDecision.BLOCK))
+                    reject = true;
             }
             else if (m.getType() == PostMediaType.VIDEO) {
                 List<ModerationVerdict> verdicts = moderationService.moderateVideoUrl(m.getMediaUrl());
@@ -83,14 +91,16 @@ public class PostModerationListener {
                     }
                 }
             }
-            if (reject) {
-                setStatusAndSaveToDb(post, PostStatus.REJECTED);
-                return;
-            }
         }
 
-        PostStatus newStatus = decideFromDb(post.getId());
+        PostStatus newStatus = reject ? PostStatus.REJECTED : decideFromDb(postId);
+        log.info("Moderated post id={}, new post status={}", event.getSource(), newStatus);
         setStatusAndSaveToDb(post, newStatus);
+
+        if (newStatus == PostStatus.REJECTED || newStatus == PostStatus.UNDER_REVIEW)
+            notificationService.sendNotification(
+                    NotificationFactory.violatedPost(post.getUser(), postId, newStatus)
+            );
     }
 
     private PostStatus decideFromDb(String postId) {

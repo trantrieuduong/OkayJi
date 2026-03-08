@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 public class CommentPostPayload extends NotificationPayload {
-    String commentId;
-    String postId;
+    private final String commentId;
+    private final String postId;
 
     public CommentPostPayload(String reviewTitle, String commentId, String postId) {
         super(reviewTitle);

@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public class LikePostPayload extends NotificationPayload {
-    String postId;
+    private final String postId;
 
     public LikePostPayload(String reviewTitle, String postId) {
         super(reviewTitle);

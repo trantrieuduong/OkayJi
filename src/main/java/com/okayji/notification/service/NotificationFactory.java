@@ -2,14 +2,12 @@ package com.okayji.notification.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.okayji.feed.entity.PostStatus;
+import com.okayji.notification.dto.*;
 import com.okayji.notification.entity.NotificationType;
 import com.okayji.feed.entity.FriendRequest;
 import com.okayji.feed.entity.Post;
 import com.okayji.identity.entity.User;
-import com.okayji.notification.dto.CommentPostPayload;
-import com.okayji.notification.dto.FriendRequestPayload;
-import com.okayji.notification.dto.LikePostPayload;
-import com.okayji.notification.dto.NewFriendPayload;
 import com.okayji.notification.entity.Notification;
 
 public class NotificationFactory {
@@ -57,6 +55,39 @@ public class NotificationFactory {
                 .payload(toJson(new CommentPostPayload(
                         commenter.getProfile().getFullName() + " comment your post",
                         commentId,
+                        postId)
+                ))
+                .build();
+    }
+
+    /**
+     *
+     * @param status REJECTED or UNDER_REVIEW
+     */
+    public static Notification violatedPost(User user, String postId, PostStatus status) {
+        if (status != PostStatus.REJECTED && status != PostStatus.UNDER_REVIEW)
+            throw new IllegalArgumentException("Post status must be REJECTED or UNDER_REVIEW");
+
+        return Notification.builder()
+                .user(user)
+                .type(NotificationType.SYSTEM_ANNOUNCEMENT)
+                .payload(toJson(new SystemPayload(
+                        "Your post violated our policy and has been " +
+                                (status.equals(PostStatus.UNDER_REVIEW)
+                                        ? "under review by admin."
+                                        : status.toString().toLowerCase()
+                                ),
+                        postId)
+                ))
+                .build();
+    }
+
+    public static Notification violatedComment(User user, String postId) {
+        return Notification.builder()
+                .user(user)
+                .type(NotificationType.SYSTEM_ANNOUNCEMENT)
+                .payload(toJson(new SystemPayload(
+                        "Your comment violated our policy and has been deleted",
                         postId)
                 ))
                 .build();
