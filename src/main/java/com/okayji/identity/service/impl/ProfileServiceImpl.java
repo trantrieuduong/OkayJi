@@ -5,6 +5,8 @@ import com.okayji.exception.AppException;
 import com.okayji.feed.entity.FriendRequest;
 import com.okayji.feed.repository.FriendRepository;
 import com.okayji.feed.repository.FriendRequestRepository;
+import com.okayji.file.service.S3MediaTypes;
+import com.okayji.file.service.S3Service;
 import com.okayji.identity.dto.request.ProfileUpdateRequest;
 import com.okayji.identity.dto.response.ProfileResponse;
 import com.okayji.identity.entity.Profile;
@@ -30,6 +32,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final FriendRequestMapper friendRequestMapper;
     private final FriendRequestRepository friendRequestRepository;
     private final FriendRepository friendRepository;
+    private final S3Service s3Service;
 
     @Override
     public ProfileResponse getUserProfile(String viewerId, String userIdOrUsername) {
@@ -69,6 +72,20 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public ProfileResponse updateUserProfile(String userId, ProfileUpdateRequest profileUpdateRequest) {
+
+        if (!profileUpdateRequest.getAvatarUrl().isBlank()) {
+            String avatarUrlContentType = s3Service
+                    .getContentTypeFromS3Url(profileUpdateRequest.getAvatarUrl());
+            if (!S3MediaTypes.isImageType(avatarUrlContentType))
+                throw new AppException(AppError.INVALID_INPUT_DATA);
+        }
+        if (!profileUpdateRequest.getCoverImageUrl().isBlank()) {
+            String coverImageUrlContentType = s3Service
+                    .getContentTypeFromS3Url(profileUpdateRequest.getCoverImageUrl());
+            if (!S3MediaTypes.isImageType(coverImageUrlContentType))
+                throw new AppException(AppError.INVALID_INPUT_DATA);
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
 

@@ -15,4 +15,5 @@ public interface S3Service {
     Path downloadToTempFile(String mediaUrl);
     String uploadTempFrame(Path file, String contentType, String prefix);
     void deleteObject(String fileUrl);
+    String getContentTypeFromS3Url(String s3Url);
 }

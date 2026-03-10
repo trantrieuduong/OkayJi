@@ -7,6 +7,7 @@ import com.okayji.file.dto.request.PresignedUrlRequest;
 import com.okayji.file.dto.response.MultipartUploadInitResponse;
 import com.okayji.file.dto.response.PartPresignedUrl;
 import com.okayji.file.dto.response.PresignedUrlResponse;
+import com.okayji.file.service.S3MediaTypes;
 import com.okayji.file.service.S3Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Uri;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -27,7 +29,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,7 +74,7 @@ public class S3ServiceImpl implements S3Service {
             throw new AppException(AppError.MAX_FILE_SIZE);
 
         // Validate file type
-        if (!isAllowedFileType(request.getFileType()))
+        if (!S3MediaTypes.isAllowedFileType(request.getFileType()))
             throw new AppException(AppError.FILE_NOT_ALLOW);
 
         String fileExtension = getFileExtension(request.getFileName());
@@ -119,7 +120,7 @@ public class S3ServiceImpl implements S3Service {
             throw new AppException(AppError.MAX_FILE_SIZE);
 
         // Validate file type
-        if (!isAllowedFileType(request.getFileType()))
+        if (!S3MediaTypes.isAllowedFileType(request.getFileType()))
             throw new AppException(AppError.FILE_NOT_ALLOW);
 
         int numParts = (int) Math.ceil((double) request.getFileSize() / PART_SIZE);
@@ -283,6 +284,25 @@ public class S3ServiceImpl implements S3Service {
         }
     }
 
+    @Override
+    public String getContentTypeFromS3Url(String s3Url) {
+        try {
+            S3Uri s3Uri = s3Client.utilities().parseUri(URI.create(s3Url));
+
+            String bucket = s3Uri.bucket()
+                    .orElseThrow(() -> new IllegalArgumentException("Missing bucket"));
+            if (!bucket.equals(bucketName))
+                throw new IllegalArgumentException("Invalid bucket");
+            String key = s3Uri.key()
+                    .orElseThrow(() -> new IllegalArgumentException("Missing key"));
+
+            HeadObjectResponse head = s3Client.headObject(b -> b.bucket(bucket).key(key));
+            return head.contentType();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private String getFileExtension(String filename) {
         int lastDotIndex = filename.lastIndexOf('.');
         if (lastDotIndex == -1) return "";
@@ -303,26 +323,6 @@ public class S3ServiceImpl implements S3Service {
         if (contentType.startsWith("video/"))
             return (long) videoMaxSize * 1024 * 1024;
         return (long) otherMaxSize * 1024 * 1024;
-    }
-
-    private boolean isAllowedFileType(String contentType) {
-        List<String> allowedTypes = Arrays.asList(
-                // Images
-                "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
-                // Videos
-                "video/mp4", "video/mpeg", "video/quicktime", "video/x-msvideo",
-                "video/webm", "video/x-matroska",
-                // Documents
-                "application/pdf",
-                "application/msword",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "application/vnd.ms-excel",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                // Archives
-                "application/zip", "application/x-rar-compressed",
-                // Audio
-                "audio/mpeg", "audio/wav", "audio/ogg");
-        return allowedTypes.contains(contentType);
     }
 
     public String extractFileKeyFromUrl(String mediaUrl) {

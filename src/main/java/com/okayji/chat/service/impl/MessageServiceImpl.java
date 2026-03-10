@@ -2,16 +2,15 @@ package com.okayji.chat.service.impl;
 
 import com.okayji.chat.dto.request.MessageRequest;
 import com.okayji.chat.dto.response.ChatUpdateEvent;
-import com.okayji.chat.entity.Chat;
-import com.okayji.chat.entity.ChatMember;
-import com.okayji.chat.entity.Message;
+import com.okayji.chat.entity.*;
 import com.okayji.chat.repository.ChatMemberRepository;
 import com.okayji.chat.repository.ChatRepository;
 import com.okayji.chat.repository.MessageRepository;
 import com.okayji.chat.service.MessageService;
-import com.okayji.chat.entity.ChatEvent;
 import com.okayji.exception.AppError;
 import com.okayji.exception.AppException;
+import com.okayji.file.service.S3MediaTypes;
+import com.okayji.file.service.S3Service;
 import com.okayji.identity.entity.User;
 import com.okayji.identity.repository.UserRepository;
 import com.okayji.mapper.MessageMapper;
@@ -34,16 +33,32 @@ public class MessageServiceImpl implements MessageService {
     private final MessageMapper messageMapper;
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
+    private final S3Service s3Service;
 
     @Override
     @Transactional
     public void sendMessage(String chatId, String userId, MessageRequest messageRequest) {
-        User sender = userRepository.findUserById(userId);
+        User sender = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new AppException(AppError.CHAT_NOT_FOUND));
         ChatMember chatMember = chatMemberRepository
                 .findByChat_IdAndMember_Id(chatId, userId)
                 .orElseThrow(() -> new AppException(AppError.UNAUTHORIZED));
+
+        if (
+                (messageRequest.getType().equals(MessageType.IMAGE)
+                        && !S3MediaTypes.isImageType(s3Service
+                        .getContentTypeFromS3Url(messageRequest.getContent())))
+                || (messageRequest.getType().equals(MessageType.VIDEO)
+                        && !S3MediaTypes.isVideoType(s3Service
+                        .getContentTypeFromS3Url(messageRequest.getContent())))
+                || (messageRequest.getType().equals(MessageType.FILE)
+                        && !S3MediaTypes.isAllowedFileType(s3Service
+                        .getContentTypeFromS3Url(messageRequest.getContent())))
+        )
+                throw new AppException(AppError.INVALID_INPUT_DATA);
+
 
         Message message = Message.builder()
                 .type(messageRequest.getType())

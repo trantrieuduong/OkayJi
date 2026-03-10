@@ -7,9 +7,11 @@ import com.okayji.feed.dto.request.PostUpdateRequest;
 import com.okayji.feed.dto.response.PostResponse;
 import com.okayji.feed.entity.Post;
 import com.okayji.feed.entity.PostMedia;
+import com.okayji.feed.entity.PostMediaType;
 import com.okayji.feed.entity.PostStatus;
 import com.okayji.feed.repository.CommentRepository;
 import com.okayji.feed.repository.ReactionRepository;
+import com.okayji.file.service.S3MediaTypes;
 import com.okayji.file.service.S3Service;
 import com.okayji.identity.entity.User;
 import com.okayji.feed.repository.PostRepository;
@@ -67,6 +69,12 @@ public class PostServiceImpl implements PostService {
                     .type(media.getType())
                     .mediaUrl(media.getMediaUrl())
                     .build();
+
+            String mediaContentType = s3Service.getContentTypeFromS3Url(media.getMediaUrl());
+            if ((media.getType().equals(PostMediaType.IMAGE) && !S3MediaTypes.isImageType(mediaContentType))
+                    ||(media.getType().equals(PostMediaType.VIDEO) && !S3MediaTypes.isVideoType(mediaContentType)))
+                throw new AppException(AppError.INVALID_INPUT_DATA);
+
             post.getPostMedia().add(postMedia);
         });
 

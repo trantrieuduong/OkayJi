@@ -15,6 +15,8 @@ import com.okayji.chat.entity.ChatType;
 import com.okayji.exception.AppError;
 import com.okayji.exception.AppException;
 import com.okayji.feed.repository.FriendRepository;
+import com.okayji.file.service.S3MediaTypes;
+import com.okayji.file.service.S3Service;
 import com.okayji.identity.entity.Profile;
 import com.okayji.identity.entity.User;
 import com.okayji.identity.repository.UserRepository;
@@ -44,6 +46,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMapper chatMapper;
     private final MessageRepository messageRepository;
     private final MessageMapper messageMapper;
+    private final S3Service s3Service;
 
     @Override
     @Transactional
@@ -109,6 +112,15 @@ public class ChatServiceImpl implements ChatService {
     public ChatResponse createGroupChat(String userId, CreateGroupChatRequest createGroupChatRequest) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(AppError.USER_NOT_FOUND));
+
+        if (createGroupChatRequest.getChatAvatarUrl() != null) {
+            String avatarUrlContentType = s3Service
+                    .getContentTypeFromS3Url(createGroupChatRequest.getChatAvatarUrl());
+
+            if (!S3MediaTypes.isImageType(avatarUrlContentType))
+                throw new AppException(AppError.INVALID_INPUT_DATA);
+        }
+
         Chat chat = Chat.builder()
                 .type(ChatType.GROUP)
                 .chatName(createGroupChatRequest.getChatName())
@@ -151,8 +163,16 @@ public class ChatServiceImpl implements ChatService {
             throw new AppException(AppError.INVALID_INPUT_DATA);
 
         chat.setChatName(updateGroupChatRequest.getChatName());
-        if (updateGroupChatRequest.getChatAvatarUrl() != null)
+
+        if (updateGroupChatRequest.getChatAvatarUrl() != null) {
+            String avatarUrlContentType = s3Service
+                    .getContentTypeFromS3Url(updateGroupChatRequest.getChatAvatarUrl());
+
+            if (!S3MediaTypes.isImageType(avatarUrlContentType))
+                throw new AppException(AppError.INVALID_INPUT_DATA);
+
             chat.setChatAvatarUrl(updateGroupChatRequest.getChatAvatarUrl());
+        }
 
         chatRepository.save(chat);
         return chatMapper.toChatResponse(
