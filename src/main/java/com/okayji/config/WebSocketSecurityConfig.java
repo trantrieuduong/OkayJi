@@ -7,36 +7,33 @@ import org.springframework.messaging.Message;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
-import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-import java.security.Principal;
+import static org.springframework.messaging.simp.SimpMessageType.MESSAGE;
+import static org.springframework.messaging.simp.SimpMessageType.SUBSCRIBE;
 
 @Configuration
-@EnableWebSocketMessageBroker
-public class WebSocketSecurityConfig implements WebSocketMessageBrokerConfigurer {
-
+public class WebSocketSecurityConfig {
     @Bean
     AuthorizationManager<Message<?>> messageAuthorizationManager(
             ChatMemberRepository chatMemberRepository) {
-        var messages = MessageMatcherDelegatingAuthorizationManager.builder();
+        return MessageMatcherDelegatingAuthorizationManager.builder()
+                .nullDestMatcher().authenticated()
 
-        messages
                 .simpDestMatchers("/app/**").authenticated() // Client -> server (@MessageMapping)
 
                 .simpSubscribeDestMatchers("/user/**").authenticated()
 
                 .simpSubscribeDestMatchers("/topic/chats/{chatId}/**")
                 .access((auth, ctx) -> {
-                    Principal principal = (Principal) auth.get().getPrincipal();
                     String chatId = String.valueOf(ctx.getVariables().get("chatId"));
+                    String userId = auth.get().getName();
                     boolean ok = chatMemberRepository
-                            .existsByChat_IdAndMember_Id(chatId, principal.getName());
+                            .existsByChat_IdAndMember_Id(chatId, userId);
                     return new AuthorizationDecision(ok);
                 })
 
-                .anyMessage().permitAll();
-
-        return messages.build();
+                .simpTypeMatchers(MESSAGE, SUBSCRIBE).denyAll()
+                .anyMessage().denyAll()
+                .build();
     }
 }
