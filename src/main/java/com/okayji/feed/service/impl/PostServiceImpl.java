@@ -18,7 +18,9 @@ import com.okayji.feed.repository.PostRepository;
 import com.okayji.feed.service.PostService;
 import com.okayji.identity.repository.UserRepository;
 import com.okayji.mapper.PostMapper;
-import com.okayji.moderation.event.PostModerationEvent;
+import com.okayji.moderation.entity.ModerationJob;
+import com.okayji.moderation.entity.TargetType;
+import com.okayji.moderation.repository.ModerationJobRepository;
 import jakarta.persistence.EntityManager;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -39,8 +41,8 @@ public class PostServiceImpl implements PostService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final EntityManager entityManager;
-    private final ApplicationEventPublisher applicationEventPublisher;
     private final S3Service s3Service;
+    private final ModerationJobRepository moderationJobRepository;
 
     @Override
     public PostResponse getPostById(String viewerId, String id) {
@@ -81,7 +83,11 @@ public class PostServiceImpl implements PostService {
         postRepository.saveAndFlush(post);
         entityManager.refresh(post);
 
-        applicationEventPublisher.publishEvent(new PostModerationEvent(post.getId()));
+        moderationJobRepository.save(ModerationJob
+                .builder()
+                .targetId(post.getId())
+                .targetType(TargetType.POST)
+                .build());
         return postMapper.toPostResponse(post);
     }
 
@@ -94,7 +100,11 @@ public class PostServiceImpl implements PostService {
         post.setStatus(PostStatus.PENDING);
         postRepository.save(post);
 
-        applicationEventPublisher.publishEvent(new PostModerationEvent(post.getId()));
+        moderationJobRepository.save(ModerationJob
+                .builder()
+                .targetId(post.getId())
+                .targetType(TargetType.POST)
+                .build());
         return postMapper.toPostResponse(post);
     }
 

@@ -4,7 +4,7 @@ import com.okayji.file.service.S3Service;
 import com.okayji.moderation.dto.ModerationVerdict;
 import com.okayji.moderation.dto.request.OpenAiModerationRequest;
 import com.okayji.moderation.dto.response.OpenAiModerationResponse;
-import com.okayji.moderation.entity.ModerationDecision;
+import com.okayji.moderation.entity.*;
 import com.okayji.moderation.service.ModerationService;
 import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;

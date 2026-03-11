@@ -1,61 +1,47 @@
-package com.okayji.moderation.listener;
+package com.okayji.moderation.service.impl;
 
-import com.okayji.exception.AppError;
-import com.okayji.exception.AppException;
-import com.okayji.feed.entity.Post;
-import com.okayji.feed.entity.PostMedia;
-import com.okayji.feed.entity.PostMediaType;
-import com.okayji.feed.entity.PostStatus;
+import com.okayji.feed.entity.*;
+import com.okayji.feed.repository.CommentRepository;
 import com.okayji.feed.repository.PostRepository;
 import com.okayji.mapper.ModerationMapper;
 import com.okayji.moderation.dto.ModerationVerdict;
-import com.okayji.moderation.entity.InputType;
-import com.okayji.moderation.entity.ModerationDecision;
-import com.okayji.moderation.entity.ModerationResult;
-import com.okayji.moderation.entity.TargetType;
-import com.okayji.moderation.event.PostModerationEvent;
+import com.okayji.moderation.entity.*;
 import com.okayji.moderation.repository.ModerationResultRepository;
+import com.okayji.moderation.service.ModerationOrchestrator;
 import com.okayji.moderation.service.ModerationService;
 import com.okayji.notification.service.NotificationFactory;
 import com.okayji.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Component
+@Service
+@Slf4j(topic = "MODERATION-ORCHESTRATOR")
 @RequiredArgsConstructor
-@Slf4j(topic = "POST-MODERATION-LISTENER")
-public class PostModerationListener {
-
+public class ModerationOrchestratorImpl implements ModerationOrchestrator {
     private final PostRepository postRepository;
-    private final ModerationResultRepository moderationResultRepository;
     private final ModerationService moderationService;
     private final ModerationMapper moderationMapper;
+    private final ModerationResultRepository moderationResultRepository;
     private final NotificationService notificationService;
+    private final CommentRepository commentRepository;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void handle(PostModerationEvent event) {
-        log.info("Received Post Moderation Event with post id={}", event.getSource());
-        String postId = (String) event.getSource();
+    @Override
+    public void processPost(ModerationJob job) {
+        String postId = job.getTargetId();
+        log.info("Received Post Moderation with post id={}", postId);
 
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new AppException(AppError.POST_NOT_FOUND));
+                .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
         boolean reject = false;
 
         // TEXT
         if (post.getContent() != null && !post.getContent().isBlank()) {
             ModerationVerdict verdict = moderationService.moderateText(post.getContent());
             ModerationResult result = moderationMapper.toModerationResult(
-                    verdict, TargetType.POST, post.getId(), InputType.TEXT
+                    verdict, job
             );
             moderationResultRepository.save(result);
 
@@ -71,7 +57,7 @@ public class PostModerationListener {
             if (m.getType() == PostMediaType.IMAGE) {
                 ModerationVerdict verdict = moderationService.moderateImageUrl(m.getMediaUrl());
                 ModerationResult result = moderationMapper.toModerationResult(
-                        verdict, TargetType.POST, post.getId(), InputType.IMAGE
+                        verdict, job
                 );
                 moderationResultRepository.save(result);
 
@@ -82,8 +68,8 @@ public class PostModerationListener {
                 List<ModerationVerdict> verdicts = moderationService.moderateVideoUrl(m.getMediaUrl());
 
                 for (ModerationVerdict verdict : verdicts) {
-                    moderationResultRepository.save(moderationMapper.toModerationResult(
-                            verdict, TargetType.POST, post.getId(), InputType.VIDEO_FRAME)
+                    moderationResultRepository.save(
+                            moderationMapper.toModerationResult(verdict, job)
                     );
                     if (verdict.decision().equals(ModerationDecision.BLOCK)) {
                         reject = true;
@@ -93,9 +79,10 @@ public class PostModerationListener {
             }
         }
 
-        PostStatus newStatus = reject ? PostStatus.REJECTED : decideFromDb(postId);
-        log.info("Moderated post id={}, new post status={}", event.getSource(), newStatus);
-        setStatusAndSaveToDb(post, newStatus);
+        PostStatus newStatus = reject ? PostStatus.REJECTED : decideFromDb(job);
+        log.info("Moderated post id={}, new post status={}", postId, newStatus);
+        post.setStatus(newStatus);
+        postRepository.save(post);
 
         if (newStatus == PostStatus.REJECTED || newStatus == PostStatus.UNDER_REVIEW)
             notificationService.sendNotification(
@@ -103,8 +90,32 @@ public class PostModerationListener {
             );
     }
 
-    private PostStatus decideFromDb(String postId) {
-        List<ModerationResult> moderationResults = moderationResultRepository.findByTargetId(postId);
+    @Override
+    public void processComment(ModerationJob job) {
+        String commentId = job.getTargetId();
+        log.info("Received Comment Moderation with comment id={}", commentId);
+
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Comment not found: " + commentId));
+
+        if (comment.getContent() != null && !comment.getContent().isBlank()) {
+            ModerationVerdict verdict = moderationService.moderateText(comment.getContent());
+            ModerationResult result = moderationMapper.toModerationResult(
+                    verdict, job
+            );
+            moderationResultRepository.save(result);
+
+            if (verdict.decision().equals(ModerationDecision.BLOCK)) { // Delete and send noti if violated
+                notificationService.sendNotification(
+                        NotificationFactory.violatedComment(comment.getUser(), comment.getPost().getId())
+                );
+                commentRepository.delete(comment);
+            }
+        }
+    }
+
+    private PostStatus decideFromDb(ModerationJob job) {
+        List<ModerationResult> moderationResults = job.getModerationResults();
         boolean review = false;
 
         for (ModerationResult m :  moderationResults) {
@@ -114,10 +125,5 @@ public class PostModerationListener {
                 review = true;
         }
         return review ? PostStatus.UNDER_REVIEW : PostStatus.PUBLISHED;
-    }
-
-    private void setStatusAndSaveToDb(Post post, PostStatus status) {
-        post.setStatus(status);
-        postRepository.save(post);
     }
 }
