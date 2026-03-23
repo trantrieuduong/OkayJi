@@ -41,7 +41,7 @@ public class ModerationOrchestratorImpl implements ModerationOrchestrator {
         if (post.getContent() != null && !post.getContent().isBlank()) {
             ModerationVerdict verdict = moderationService.moderateText(post.getContent());
             ModerationResult result = moderationMapper.toModerationResult(
-                    verdict, job
+                    verdict, job, InputType.TEXT
             );
             moderationResultRepository.save(result);
 
@@ -57,7 +57,7 @@ public class ModerationOrchestratorImpl implements ModerationOrchestrator {
             if (m.getType() == PostMediaType.IMAGE) {
                 ModerationVerdict verdict = moderationService.moderateImageUrl(m.getMediaUrl());
                 ModerationResult result = moderationMapper.toModerationResult(
-                        verdict, job
+                        verdict, job, InputType.IMAGE
                 );
                 moderationResultRepository.save(result);
 
@@ -69,7 +69,7 @@ public class ModerationOrchestratorImpl implements ModerationOrchestrator {
 
                 for (ModerationVerdict verdict : verdicts) {
                     moderationResultRepository.save(
-                            moderationMapper.toModerationResult(verdict, job)
+                            moderationMapper.toModerationResult(verdict, job, InputType.VIDEO_FRAME)
                     );
                     if (verdict.decision().equals(ModerationDecision.BLOCK)) {
                         reject = true;
@@ -101,7 +101,7 @@ public class ModerationOrchestratorImpl implements ModerationOrchestrator {
         if (comment.getContent() != null && !comment.getContent().isBlank()) {
             ModerationVerdict verdict = moderationService.moderateText(comment.getContent());
             ModerationResult result = moderationMapper.toModerationResult(
-                    verdict, job
+                    verdict, job, InputType.TEXT
             );
             moderationResultRepository.save(result);
 

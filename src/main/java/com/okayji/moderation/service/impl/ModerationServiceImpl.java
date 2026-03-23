@@ -132,8 +132,7 @@ public class ModerationServiceImpl implements ModerationService {
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to moderate video " + videoUrl, e);
-        }
-        finally {
+        } finally {
             extractedFrames.forEach(this::deleteQuietly);
             deleteQuietly(tempVideo);
             uploadedFrameUrls.forEach(s3Service::deleteObject);

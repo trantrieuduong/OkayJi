@@ -279,7 +279,7 @@ public class S3ServiceImpl implements S3Service {
                     .build();
 
             s3Client.deleteObject(request);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("Cannot delete S3 object {}", fileUrl, e);
         }
     }
@@ -298,7 +298,7 @@ public class S3ServiceImpl implements S3Service {
 
             HeadObjectResponse head = s3Client.headObject(b -> b.bucket(bucket).key(key));
             return head.contentType();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return null;
         }
     }
@@ -330,8 +330,8 @@ public class S3ServiceImpl implements S3Service {
             URI uri = URI.create(mediaUrl);
             String path = uri.getPath();
             return path.startsWith("/") ? path.substring(1) : path;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid S3 URL: " + mediaUrl, e);
+        } catch (RuntimeException e) {
+            return null;
         }
     }
 

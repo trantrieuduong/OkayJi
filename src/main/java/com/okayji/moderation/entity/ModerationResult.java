@@ -28,6 +28,10 @@ public class ModerationResult {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
+    InputType inputType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
     ModerationDecision decision;
 
     boolean flagged;
