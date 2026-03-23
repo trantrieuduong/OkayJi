@@ -5,7 +5,7 @@ server:
 
 app:
   ffmpeg:
-    path: C:/Program Files/ffmpeg/bin/ffmpeg.exe
+    path: C:/Program Files/ffmpeg/bin/ffmpeg.exe # based on your device
 
 spring:
   datasource:

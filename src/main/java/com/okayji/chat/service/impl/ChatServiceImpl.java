@@ -5,8 +5,10 @@ import com.okayji.chat.dto.request.UpdateGroupChatRequest;
 import com.okayji.chat.dto.response.ChatMemberResponse;
 import com.okayji.chat.dto.response.ChatResponse;
 import com.okayji.chat.dto.response.MessageResponse;
+import com.okayji.chat.dto.response.ListMessageResponse;
 import com.okayji.chat.entity.Chat;
 import com.okayji.chat.entity.ChatMember;
+import com.okayji.chat.entity.Message;
 import com.okayji.chat.repository.ChatMemberRepository;
 import com.okayji.chat.repository.ChatRepository;
 import com.okayji.chat.repository.MessageRepository;
@@ -23,12 +25,9 @@ import com.okayji.identity.repository.UserRepository;
 import com.okayji.mapper.ChatMapper;
 import com.okayji.mapper.MessageMapper;
 import com.okayji.utils.PairUser;
+import org.springframework.data.domain.*;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -208,13 +207,34 @@ public class ChatServiceImpl implements ChatService {
                 .toList();
     }
 
-    @Override
-    public Page<MessageResponse> getMessages(String chatId, int page, int size) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "seq");
-        Pageable pageable = PageRequest.of(page, size, sort);
+//    @Override
+//    public Page<MessageResponse> getMessages(String chatId, int page, int size) {
+//        Sort sort = Sort.by(Sort.Direction.DESC, "seq");
+//        Pageable pageable = PageRequest.of(page, size, sort);
+//
+//        return messageRepository.findByChatId(chatId, pageable)
+//                .map(messageMapper::toMessageResponse);
+//    }
 
-        return messageRepository.findByChatId(chatId, pageable)
-                .map(messageMapper::toMessageResponse);
+    @Override
+    public ListMessageResponse getMessages(String chatId, int limit, Long cursorSeq) {
+        Pageable pageable = PageRequest.of(0, limit);
+
+        Slice<Message> slice = (cursorSeq == null)
+                ? messageRepository.findMessagesFirstPage(chatId, pageable)
+                : messageRepository.findMessagesAfterCursor(chatId, cursorSeq, pageable);
+
+        List<MessageResponse> items = slice.getContent().stream()
+                .map(messageMapper::toMessageResponse)
+                .toList();
+        Long nextCursorSeq = null;
+        if (!items.isEmpty() && slice.hasNext())
+            nextCursorSeq = items.getLast().getSeq();
+
+        return ListMessageResponse.builder()
+                .items(items)
+                .nextCursorSeq(nextCursorSeq)
+                .build();
     }
 
     private ChatResponse getChatResponse(Chat chat, User currentUser) {

@@ -1,5 +1,7 @@
 package com.okayji.moderation.entity;
 
 public enum InputType {
-    TEXT, IMAGE, VIDEO_FRAME
+    TEXT,
+    IMAGE,
+    VIDEO_FRAME
 }

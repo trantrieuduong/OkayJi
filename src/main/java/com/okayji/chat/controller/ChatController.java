@@ -4,7 +4,7 @@ import com.okayji.chat.dto.request.CreateGroupChatRequest;
 import com.okayji.chat.dto.request.UpdateGroupChatRequest;
 import com.okayji.chat.dto.response.ChatMemberResponse;
 import com.okayji.chat.dto.response.ChatResponse;
-import com.okayji.chat.dto.response.MessageResponse;
+import com.okayji.chat.dto.response.ListMessageResponse;
 import com.okayji.chat.service.ChatService;
 import com.okayji.common.ApiResponse;
 import com.okayji.identity.entity.User;
@@ -72,13 +72,13 @@ public class ChatController {
     @GetMapping("/{chatId}/messages")
     @Operation(summary = "Get messages in chat")
     @PreAuthorize("@permissionCheck.canAccessChat(#currentUser.id, #chatId)")
-    ApiResponse<Page<MessageResponse>> getMessages(@PathVariable String chatId, 
-                                                   @RequestParam(defaultValue = "0") int page, 
-                                                   @RequestParam(defaultValue = "20") int size,
-                                                   @CurrentUser User currentUser) {
-        return ApiResponse.<Page<MessageResponse>>builder()
+    ApiResponse<ListMessageResponse> getMessages(@PathVariable String chatId,
+                                                 @RequestParam(defaultValue = "20") int limit,
+                                                 @RequestParam(required = false) Long cursorSeq,
+                                                 @CurrentUser User currentUser) {
+        return ApiResponse.<ListMessageResponse>builder()
                 .success(true)
-                .data(chatService.getMessages(chatId, page, size))
+                .data(chatService.getMessages(chatId, limit, cursorSeq))
                 .build();
     }
 

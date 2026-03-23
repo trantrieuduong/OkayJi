@@ -36,8 +36,7 @@ public interface PostRepository extends JpaRepository<Post,String> {
         from Post p
         where p.user.id in :authorIds
         and p.status = com.okayji.feed.entity.PostStatus.PUBLISHED
-        and (p.createdAt < :cursorTime
-        or (p.createdAt = :cursorTime and p.id < :cursorId))
+        and (p.createdAt < :cursorTime or (p.createdAt = :cursorTime and p.id < :cursorId))
         order by p.createdAt desc, p.id desc
     """)
     Slice<Post> findFeedAfterCursor(@Param("authorIds") Collection<String> authorIds,
