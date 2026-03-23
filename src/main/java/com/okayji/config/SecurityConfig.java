@@ -1,7 +1,7 @@
 package com.okayji.config;
 
 import com.okayji.identity.service.CustomUserDetailsService;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,15 +26,10 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@AllArgsConstructor
 public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    private final String[] ALLOW_ORIGINS = {
-            "http://localhost:5173"
-    };
-
+    private final List<String> ALLOW_ORIGINS;
     private final String[] PUBLIC_ENDPOINTS = {
             "/auth/login",
             "/auth/signup",
@@ -44,6 +39,14 @@ public class SecurityConfig {
             "/v3/api-docs*/**",
             "/ws/**"
     };
+
+    public SecurityConfig(CustomUserDetailsService customUserDetailsService,
+                          JwtAuthenticationFilter jwtAuthenticationFilter,
+                          @Value("#{'${app.front-end-domain}'.split(',')}") List<String> ALLOW_ORIGINS) {
+        this.customUserDetailsService = customUserDetailsService;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.ALLOW_ORIGINS = ALLOW_ORIGINS;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) {
@@ -82,7 +85,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
-        corsConfiguration.setAllowedOrigins(List.of(ALLOW_ORIGINS));
+        corsConfiguration.setAllowedOrigins(ALLOW_ORIGINS);
         corsConfiguration.setAllowedMethods(List.of("*"));
         corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setAllowCredentials(true);

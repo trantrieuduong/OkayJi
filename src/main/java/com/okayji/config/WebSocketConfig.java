@@ -1,7 +1,7 @@
 package com.okayji.config;
 
 import com.okayji.identity.service.JwtService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
@@ -23,7 +23,6 @@ import java.util.List;
 
 @Configuration
 @EnableWebSocketMessageBroker
-@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     // docs: https://docs.spring.io/spring-security/reference/servlet/integrations/websocket.html
     // access: 10/03/2026
@@ -31,9 +30,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final JwtService jwtService;
     private final ApplicationContext applicationContext;
     private final AuthorizationManager<Message<?>> authorizationManager;
-    private final String[] ALLOW_ORIGINS = {
-            "http://localhost:5173"
-    };
+    private final String[] ALLOW_ORIGINS;
+
+    public WebSocketConfig(JwtService jwtService,
+                           ApplicationContext applicationContext,
+                           AuthorizationManager<Message<?>> authorizationManager,
+                           @Value("#{'${app.front-end-domain}'.split(',')}") String[] ALLOW_ORIGINS) {
+        this.jwtService = jwtService;
+        this.applicationContext = applicationContext;
+        this.authorizationManager = authorizationManager;
+        this.ALLOW_ORIGINS = ALLOW_ORIGINS;
+    }
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {

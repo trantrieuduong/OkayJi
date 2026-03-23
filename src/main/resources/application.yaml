@@ -6,6 +6,7 @@ server:
 app:
   ffmpeg:
     path: C:/Program Files/ffmpeg/bin/ffmpeg.exe # based on your device
+  front-end-domain: "http://localhost:5173,http://localhost:8080"
 
 spring:
   datasource:
